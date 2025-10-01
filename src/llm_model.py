@@ -28,6 +28,7 @@ def load_quantized_model(model_id: str) -> HuggingFacePipeline:
         model_id,
         quantization_config=quantization_config,
         device_map="auto",  # 사용 가능한 GPU에 모델 레이어를 자동으로 분배
+        trust_remote_code=True, # 모델 저장소의 코드를 신뢰하고 실행
     )
 
     # Transformers 파이프라인 생성
