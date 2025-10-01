@@ -103,18 +103,18 @@ def few_shot_rag_invoke(question: str, k_fewshot: int):
     retriever = get_retriever(k=k_fewshot + 1)
 
     retrieved_docs = retriever.invoke(question)
-    
-    context_doc = None
-    few_shot_examples_docs = []
-    num_examples_used = 0
 
-    if retrieved_docs:
-        if len(retrieved_docs) > 1 and k_fewshot > 0:
-            context_doc = retrieved_docs[0]
-            few_shot_examples_docs = retrieved_docs[1:k_fewshot + 1]
-            num_examples_used = len(few_shot_examples_docs)
-        else:
-            context_doc = retrieved_docs[0]
+    # 검색된 문서가 없으면 바로 반환
+    if not retrieved_docs:
+        return {
+            "answer": "관련 정보를 찾을 수 없습니다.",
+            "source_documents": [],
+            "few_shot_examples_used": 0
+        }
+
+    context_doc = retrieved_docs[0]
+    few_shot_examples_docs = retrieved_docs[1:k_fewshot + 1] if len(retrieved_docs) > 1 and k_fewshot > 0 else []
+    num_examples_used = len(few_shot_examples_docs)
 
     few_shot_examples_text = "".join([
         f"[예시 질문]: {doc.metadata['question']}\n[예시 출처]: {doc.page_content}\n[예시 답변]: {doc.metadata['answer']}\n"
@@ -139,7 +139,7 @@ def few_shot_rag_invoke(question: str, k_fewshot: int):
     
     final_prompt_content = template.format(
         few_shot_examples=few_shot_examples_text,
-        context=context_doc.page_content if context_doc else "제공된 정보 없음",
+        context=context_doc.page_content,
         question=question
     )
 
@@ -153,22 +153,20 @@ def few_shot_rag_invoke(question: str, k_fewshot: int):
             **inputs,
             max_new_tokens=settings.MAX_NEW_TOKENS,
             eos_token_id=tokenizer.eos_token_id,
-            do_sample=True,
-            temperature=0.6,
+            do_sample=False,
+            temperature=0.1,
             top_p=0.9,
         )
     
     response_text = tokenizer.decode(outputs[0][len(inputs["input_ids"][0]):], skip_special_tokens=True)
     
-    source_documents = []
-    if context_doc:
-        snippet = _extract_answer_snippet(context_doc.page_content, response_text)
-        source_documents.append(SourceDocument(
-            title=context_doc.metadata.get('title', 'N/A'),
-            retrieved_question=context_doc.metadata.get('question', 'N/A'),
-            content_snippet=snippet,
-            is_fewshot=False
-        ))
+    snippet = _extract_answer_snippet(context_doc.page_content, response_text)
+    source_documents = [SourceDocument(
+        title=context_doc.metadata.get('title', 'N/A'),
+        retrieved_question=context_doc.metadata.get('question', 'N/A'),
+        content_snippet=snippet,
+        is_fewshot=False
+    )]
 
     return {
         "answer": response_text,
