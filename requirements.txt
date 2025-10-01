@@ -12,7 +12,7 @@ accelerate==0.29.3
 bitsandbytes==0.43.0
 langchain==0.1.14
 langchain-community==0.0.32
-langchain-core==0.1.37
+langchain-core==0.1.41
 langchain-text-splitters==0.0.1
 
 # 데이터 처리 및 벡터 DB
