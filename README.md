@@ -38,24 +38,24 @@
 
 ### 엔드포인트
 
-`POST /api/v1/rag/invoke`
+`POST /rag/answer`
 
 ### 입력 (Request Body)
 
 ```json
 {
   "question": "유엔이 설립된 연도는?",
-  "k": 5
+  "k_fewshot": 5
 }
 ```
 
 - `question` (str): 사용자 질문
-- `k` (int): RAG 검색 및 Few-shot 예시 생성에 사용할 문서의 수 (기본값: 3)
+- `k_fewshot` (int): RAG 검색 및 Few-shot 예시 생성에 사용할 문서의 수 (기본값: 3)
 
 ### 출력 (Response Body)
 ```json
 {
-  "answer": "1945년 10월 24일 국제 연합(UN)이 설립되었습니다.",
+  "answer": "1945년 10월 24일에 설립되었습니다.",
   "source_documents": [
     {
       "title": "유엔",
@@ -63,7 +63,8 @@
       "content_snippet": "유엔(UN)은 국제 연합(United Nations)의 약자로, 1945년 10월 24일에 설립된...",
       "is_fewshot": false
     }
-  ]
+  ],
+  "few_shot_examples_used": 5
 }
 ```
 
@@ -102,7 +103,7 @@ echo "--------------------------"
 # 1. FastAPI 서버 실행
 # LLM은 4-bit 양자화로 GPU에 로드됩니다.
 # (파일 이름: main.py, FastAPI 인스턴스 이름: app)
-uvicorn main:app --host 0.0.0.0 --port 8000
+uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 # 2. 서비스 확인 (서버 실행 로그 확인)
 echo "--- RAG 서비스 실행 정보 ---"
@@ -127,10 +128,10 @@ chmod +x run.sh
 
 ### 서버 실행 테스트
 ```bash
-curl -X POST "http://127.0.0.1:8000/api/v1/rag/invoke" \
+curl -X POST "http://127.0.0.1:8000/rag/answer" \
 -H "Content-Type: application/json" \
 -d '{
   "question": "이순신 장군이 사망한 전쟁은 무엇인가?",
-  "k": 3
+  "k_fewshot": 3
 }'
 ```

@@ -10,7 +10,7 @@ import pandas as pd
 # README에 명시된 고성능 한국어 임베딩 모델 사용
 EMBED_MODEL_ID = "dragonkue/bge-m3-ko" 
 # STRUCTURE.md에 명시된 DB 경로 사용
-CHROMA_DB_PATH = "data/chroma_db_korquad_full_context_rag" 
+CHROMA_DB_PATH = "chroma_db_korquad_full_context_rag" 
 DATASET_ID = "squad_kor_v1"
 
 def load_and_process_data():
@@ -84,7 +84,7 @@ if __name__ == "__main__":
     print("--- 벡터 데이터베이스 구축 스크립트 시작 ---")
     
     # 데이터 디렉토리 생성
-    os.makedirs(os.path.dirname(CHROMA_DB_PATH), exist_ok=True)
+    # os.makedirs(os.path.dirname(CHROMA_DB_PATH), exist_ok=True)
 
     # 1. 데이터 로드 및 전처리
     docs = load_and_process_data()

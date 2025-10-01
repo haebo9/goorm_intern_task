@@ -1,47 +1,38 @@
 import os
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, pipeline
-from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.prompts import PromptTemplate
-from langchain.schema.runnable import RunnablePassthrough
-from langchain.schema.output_parser import StrOutputParser
-
 from app.core.config import settings
 from app.models.schemas import SourceDocument
 
 # --- 모델 및 벡터DB 로드 (싱글톤 패턴) ---
-_llm = None
+_tokenizer = None
+_model = None
 _embeddings = None
 _vectordb = None
-_retriever = None
 
-def _load_quantized_model(model_id: str, device: str) -> HuggingFacePipeline:
-    """4비트 양자화된 LLM을 로드합니다."""
-    quantization_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_use_double_quant=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.bfloat16
-    )
-    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
-    model = AutoModelForCausalLM.from_pretrained(
-        model_id,
-        quantization_config=quantization_config,
-        device_map=device,
-        trust_remote_code=True,
-    )
-    pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, max_new_tokens=512, repetition_penalty=1.1)
-    return HuggingFacePipeline(pipeline=pipe)
-
-def get_llm():
-    """LLM을 로드하거나 이미 로드된 경우 반환합니다."""
-    global _llm
-    if _llm is None:
+def get_tokenizer_and_model():
+    """Tokenizer와 4비트 양자화된 LLM을 로드합니다."""
+    global _tokenizer, _model
+    if _tokenizer is None or _model is None:
         print(f"LLM '{settings.LLM_MODEL_ID}' 로드 중...")
-        _llm = _load_quantized_model(settings.LLM_MODEL_ID, settings.DEVICE_TYPE)
-    return _llm
+        quantization_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.bfloat16
+        )
+        _tokenizer = AutoTokenizer.from_pretrained(settings.LLM_MODEL_ID, trust_remote_code=True)
+        _model = AutoModelForCausalLM.from_pretrained(
+            settings.LLM_MODEL_ID,
+            quantization_config=quantization_config,
+            device_map=settings.DEVICE_TYPE,
+            trust_remote_code=True,
+        )
+        _model.eval()
+    return _tokenizer, _model
 
 def get_embeddings():
     """임베딩 모델을 로드하거나 이미 로드된 경우 반환합니다."""
@@ -68,7 +59,6 @@ def get_vectordb():
 
 def get_retriever(k: int = settings.DEFAULT_K_FEWSHOT):
     """Retriever를 생성하거나 반환합니다."""
-    # k 값이 달라질 수 있으므로 retriever는 매번 새로 생성
     vectordb = get_vectordb()
     return vectordb.as_retriever(search_kwargs={'k': k})
 
@@ -79,9 +69,8 @@ def initialize_rag_system():
     print("RAG 시스템 초기화 시작: 임베딩, 벡터DB, LLM 로드")
     get_embeddings()
     get_vectordb()
-    get_llm()
+    get_tokenizer_and_model()
     print("RAG 시스템 초기화 완료.")
-
 
 # --- Few-Shot RAG 서비스 로직 ---
 
@@ -92,63 +81,71 @@ def _format_docs(docs):
 def few_shot_rag_invoke(question: str, k_fewshot: int):
     """
     Few-Shot RAG 체인을 실행하여 질문에 대한 답변을 생성합니다.
-
-    Args:
-        question (str): 사용자 질문
-        k_fewshot (int): Few-Shot 예시로 사용할 문서의 수
-
-    Returns:
-        dict: 답변, 출처 문서, 사용된 Few-Shot 예시 수를 포함하는 딕셔너리
     """
-    llm = get_llm()
-    retriever = get_retriever(k=k_fewshot + 1) # 답변 근거용 문서 1개 + few-shot 예시 k개
+    tokenizer, model = get_tokenizer_and_model()
+    retriever = get_retriever(k=k_fewshot + 1)
 
-    # 1. 관련 문서 검색
     retrieved_docs = retriever.invoke(question)
     
-    # 2. Few-Shot 예시와 실제 컨텍스트 분리
     if len(retrieved_docs) > 1 and k_fewshot > 0:
-        context_doc = retrieved_docs[0] # 가장 유사도 높은 문서를 답변 근거로 사용
-        few_shot_examples = retrieved_docs[1:k_fewshot + 1]
-        num_examples_used = len(few_shot_examples)
-    else: # 검색된 문서가 부족할 경우
+        context_doc = retrieved_docs[0]
+        few_shot_examples_docs = retrieved_docs[1:k_fewshot + 1]
+        num_examples_used = len(few_shot_examples_docs)
+    else:
         context_doc = retrieved_docs[0] if retrieved_docs else None
-        few_shot_examples = []
+        few_shot_examples_docs = []
         num_examples_used = 0
 
-    # 3. 프롬프트 템플릿 정의
-    template = """당신은 주어진 예시와 정보를 바탕으로 질문에 답변하는 AI 어시스턴트입니다. 항상 친절하고 상세하게 답변해주세요.
-        만약 주어진 정보에 답변의 근거가 없다면, "정보가 부족하여 답변할 수 없습니다."라고 솔직하게 말해주세요.
+    few_shot_examples_text = "".join([
+        f"[예시 질문]: {doc.metadata['question']}\n[예시 출처]: {doc.page_content}\n[예시 답변]: {doc.metadata['answer']}\n"
+        for doc in few_shot_examples_docs
+    ])
 
-        [Few-Shot 예시]
+    template = """## 임무:
+
+        제공된 '최종 출처' 정보만을 사용하여 '최종 질문'에 가장 정확하게 답변하십시오. 출처에 답이 없으면 '주어진 정보로는 답을 찾을 수 없습니다.'라고 답하세요. 답변은 반드시 출처에 명시된 용어로 작성하십시오.
+
+        ## 학습 예시:
         {few_shot_examples}
 
-        [정보]
+        ## 최종 출처:
         {context}
 
-        [질문]
+        ## 최종 질문:
         {question}
 
-        [답변]
+        [최종 답변]:
         """
-    prompt = PromptTemplate.from_template(template)
-
-    # 4. RAG 체인 구성
-    rag_chain = (
-        {
-            "few_shot_examples": lambda x: _format_docs(few_shot_examples),
-            "context": lambda x: context_doc.page_content if context_doc else "제공된 정보 없음",
-            "question": RunnablePassthrough()
-        }
-        | prompt
-        | llm
-        | StrOutputParser()
+    
+    final_prompt_content = template.format(
+        few_shot_examples=few_shot_examples_text,
+        context=context_doc.page_content if context_doc else "제공된 정보 없음",
+        question=question
     )
 
-    # 5. 체인 실행
-    answer = rag_chain.invoke(question)
+    messages = [{"role": "user", "content": final_prompt_content}]
+    inputs = tokenizer.apply_chat_template(
+        messages, add_generation_prompt=True, tokenize=True, return_dict=True, return_tensors="pt"
+    ).to(model.device)
 
-    # 6. 출처 문서 포맷팅
+    with torch.no_grad():
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=512,
+            do_sample=False,
+            eos_token_id=tokenizer.eos_token_id,
+            repetition_penalty=1.1
+        )
+
+    decoded_answer = tokenizer.decode(outputs[0][inputs["input_ids"].shape[-1]:], skip_special_tokens=True).strip()
+    
+    # 답변 후처리
+    clean_answer = decoded_answer
+    stop_tokens = ["assistant", "[최종 답변]:", "user:", "##"]
+    for token in stop_tokens:
+        if token in clean_answer:
+            clean_answer = clean_answer.split(token)[0].strip()
+
     source_documents = []
     if context_doc:
         source_documents.append(SourceDocument(
@@ -157,7 +154,7 @@ def few_shot_rag_invoke(question: str, k_fewshot: int):
             content_snippet=context_doc.page_content,
             is_fewshot=False
         ))
-    for doc in few_shot_examples:
+    for doc in few_shot_examples_docs:
         source_documents.append(SourceDocument(
             title=doc.metadata.get('title', 'N/A'),
             retrieved_question=doc.metadata.get('question', 'N/A'),
@@ -166,7 +163,7 @@ def few_shot_rag_invoke(question: str, k_fewshot: int):
         ))
 
     return {
-        "answer": answer,
+        "answer": clean_answer,
         "source_documents": source_documents,
         "few_shot_examples_used": num_examples_used
     }
