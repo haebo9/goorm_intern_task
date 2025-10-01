@@ -36,42 +36,27 @@ fi
 # 5. FastAPI 서버 실행 및 확인
 echo -e "\n--- 5. FastAPI 서버 시작 및 모델 로드 확인 ---"
 echo "Uvicorn 서버를 백그라운드에서 시작합니다. 주소: http://127.0.0.1:8000"
+# --reload 옵션은 개발 중에 유용하며, 파일 변경 시 서버를 자동으로 재시작합니다.
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload &
 UVICORN_PID=$!
 
-# 서버가 시작될 때까지 잠시 대기 (최대 60초)
-echo "서버가 시작되기를 기다리는 중..."
-for i in {1..12}; do
-    sleep 5
-    # /docs 엔드포인트로 서버 상태 확인
-    curl -s --head http://127.0.0.1:8000/docs | head -n 1 | grep "200 OK" > /dev/null
-    if [ $? -eq 0 ]; then
+# 서버가 모델 로드를 완료하고 준비될 때까지 대기 (최대 5분)
+echo "서버가 시작되고 모델을 로드하는 중입니다. 이 과정은 몇 분 정도 소요될 수 있습니다..."
+for i in {1..60}; do
+    # /health 엔드포인트로 서버 준비 상태 확인
+    response_code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/health)
+    if [ "$response_code" -eq 200 ]; then
+        echo "✅ 서버가 성공적으로 시작되고 모든 모델을 로드했습니다."
         break
     fi
-    echo "($i/12) 아직 서버가 준비되지 않았습니다. 5초 후 재시도합니다."
+    echo "($i/60) 아직 서버가 준비되지 않았습니다. 5초 후 재시도합니다. (HTTP 상태: $response_code)"
+    sleep 5
 done
 
 # 최종 서버 상태 확인
-curl -s --head http://127.0.0.1:8000/docs | head -n 1 | grep "200 OK" > /dev/null
-if [ $? -ne 0 ]; then
-    echo "❌ 서버가 60초 내에 정상적으로 시작되지 않았습니다. 로그를 확인해주세요."
-    kill $UVICORN_PID
-    exit 1
-fi
-echo "✅ 서버가 성공적으로 시작되었습니다."
-
-echo "LLM 모델 로드를 시도합니다. 이 과정은 GPU 설정 및 모델 크기에 따라 몇 분 정도 소요될 수 있습니다..."
-# 간단한 질문으로 RAG 파이프라인을 테스트하여 모델 로드를 강제하고 확인합니다.
-response=$(curl -s -X POST "http://127.0.0.1:8000/api/v1/rag/invoke" \
-    -H "Content-Type: application/json" \
-    -d '{"question": "이순신 장군님이 사망한 전쟁의 이름은?", "k": 4}')
-
-# 응답에 'answer' 필드가 있는지 확인
-if echo "$response" | grep -q '"answer"'; then
-    echo "✅ LLM 모델이 성공적으로 로드되고 응답을 반환했습니다."
-else
-    echo "❌ LLM 모델 로드 또는 응답 생성에 실패했습니다. 서버 로그를 확인해주세요."
-    echo "서버 응답: $response"
+response_code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/health)
+if [ "$response_code" -ne 200 ]; then
+    echo "❌ 서버가 5분 내에 정상적으로 준비되지 않았습니다. 로그를 확인해주세요."
     kill $UVICORN_PID
     exit 1
 fi

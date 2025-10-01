@@ -66,9 +66,22 @@ def get_vectordb():
         _vectordb = Chroma(persist_directory=settings.CHROMA_DB_PATH, embedding_function=get_embeddings())
     return _vectordb
 
-def get_retriever(k: int = 5):
-    """Retriever를 생성합니다."""
-    return get_vectordb().as_retriever(search_kwargs={"k": k})
+def get_retriever(k: int = settings.DEFAULT_K_FEWSHOT):
+    """Retriever를 생성하거나 반환합니다."""
+    # k 값이 달라질 수 있으므로 retriever는 매번 새로 생성
+    vectordb = get_vectordb()
+    return vectordb.as_retriever(search_kwargs={'k': k})
+
+def initialize_rag_system():
+    """
+    서버 시작 시 RAG 시스템에 필요한 모든 구성 요소를 미리 로드합니다.
+    """
+    print("RAG 시스템 초기화 시작: 임베딩, 벡터DB, LLM 로드")
+    get_embeddings()
+    get_vectordb()
+    get_llm()
+    print("RAG 시스템 초기화 완료.")
+
 
 # --- Few-Shot RAG 서비스 로직 ---
 
