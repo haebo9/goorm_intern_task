@@ -9,9 +9,6 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Data & DB
-data/
-
 # Jupyter Notebook
 .ipynb_checkpoints
 
