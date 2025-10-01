@@ -55,8 +55,8 @@ def create_vector_db(documents):
 
     print(f"임베딩 모델 '{EMBED_MODEL_ID}' 로드 중...")
     # README에 명시된 대로, 한국어에 특화된 고성능 임베딩 모델 사용
-    # CPU를 사용하도록 설정 (GPU가 없는 환경에서도 실행 가능)
-    model_kwargs = {'device': 'cpu'}
+    # GPU를 사용하도록 설정
+    model_kwargs = {'device': 'cuda'}
     encode_kwargs = {'normalize_embeddings': True}
     embeddings = HuggingFaceEmbeddings(
         model_name=EMBED_MODEL_ID,

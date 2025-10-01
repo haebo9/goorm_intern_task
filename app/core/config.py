@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     DEFAULT_K_FEWSHOT: int = 3
 
     # 모델 로드 장치 설정 (CUDA 사용 가능 여부에 따라 자동 설정)
-    DEVICE_TYPE: str = "auto"
+    DEVICE_TYPE: str = "cuda"
 
     class Config:
         # .env 파일을 읽어 환경 변수로 사용

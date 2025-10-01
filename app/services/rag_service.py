@@ -105,19 +105,19 @@ def few_shot_rag_invoke(question: str, k_fewshot: int):
 
     # 3. 프롬프트 템플릿 정의
     template = """당신은 주어진 예시와 정보를 바탕으로 질문에 답변하는 AI 어시스턴트입니다. 항상 친절하고 상세하게 답변해주세요.
-만약 주어진 정보에 답변의 근거가 없다면, "정보가 부족하여 답변할 수 없습니다."라고 솔직하게 말해주세요.
+        만약 주어진 정보에 답변의 근거가 없다면, "정보가 부족하여 답변할 수 없습니다."라고 솔직하게 말해주세요.
 
-[Few-Shot 예시]
-{few_shot_examples}
+        [Few-Shot 예시]
+        {few_shot_examples}
 
-[정보]
-{context}
+        [정보]
+        {context}
 
-[질문]
-{question}
+        [질문]
+        {question}
 
-[답변]
-"""
+        [답변]
+        """
     prompt = PromptTemplate.from_template(template)
 
     # 4. RAG 체인 구성
