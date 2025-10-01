@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     # 모델 로드 장치 설정 (CUDA 사용 가능 여부에 따라 자동 설정)
     DEVICE_TYPE: str = "auto"
 
+    # LLM 답변 생성 시 최대 토큰 길이
+    MAX_NEW_TOKENS: int = 512
+
     class Config:
         # .env 파일을 읽어 환경 변수로 사용
         env_file = ".env"
