@@ -50,8 +50,8 @@
 | **id** | `string` | `id` | 문서의 고유 식별자입니다. |
 | **answers** | `Dict` | `text`, `ànswer_start` | 질문의 정답, 정답이 포함된 문장 시작 인덱스 |
 ---
-```json
-## 데이터 예시
+```python
+# 데이터 예시
 {
 'id': '656656-0-0',
 'title': '유엔',
@@ -102,14 +102,14 @@
 | 하드웨어
 - GPU : NVIDIA RTX 4090 (1x) 
 - GPU 메모리 (VRAM) : 24 GB
-- vCPU : 12
-- 시스템 메모리 (RAM) : 32 GB 이상
-- 디스크 공간 (SSD) : 60 GB 이상
+- vCPU : 12 core
+- 시스템 메모리 (RAM) : 32 GB
+- 디스크 공간 (SSD) : 60 GB
 - Container Disk(Disk usage) : 	60 GB
 - Volume Disk (영구 저장소) : 80 GB
 
 | 소프트웨어
-- 리눅스 : Ubuntu 22.04
+- linux : Ubuntu 22.04
 - pytorch : 2.1.0
 - runpod : pytorch:2.1.0-py3.10-cuda11.8.0-devel-ubuntu22.04
 
