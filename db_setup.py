@@ -36,7 +36,8 @@ def load_and_process_data():
                 metadata={
                     'title': item['title'],
                     'question': item['question'], # 이 컨텍스트와 가장 관련 높은 대표 질문
-                    'answer': item['answers']['text'][0] # 대표 질문에 대한 답변
+                    'answer': item['answers']['text'][0], # 대표 질문에 대한 답변
+                    'answer_start': item['answers']['answer_start'][0] # 답변 시작 위치
                 }
             )
             documents.append(doc)
