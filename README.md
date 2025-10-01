@@ -1,2 +1,3 @@
-# goorm_intern_task
-구름 인턴십 과제를 위한 RAG 서비스 구현
+# KorQuAD 1.0 기반 RAG LLM REST API 서비스
+
+이 프로젝트는 KorQuAD 1.0 데이터셋을 기반으로 한 RAG(Retrieval-Augmented Generation) LLM 질의응답 API 서비스를 구축하는 것을 목표로 합니다. Vector DB로는 ChromaDB를 사용합니다.
