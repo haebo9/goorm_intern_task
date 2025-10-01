@@ -38,30 +38,32 @@
 
 ### 엔드포인트
 
-`POST /rag/answer`
+`POST /api/v1/rag/invoke`
 
 ### 입력 (Request Body)
 
 ```json
 {
   "question": "유엔이 설립된 연도는?",
-  "k_fewshot": 5,
+  "k": 5
 }
 ```
+
+- `question` (str): 사용자 질문
+- `k` (int): RAG 검색 및 Few-shot 예시 생성에 사용할 문서의 수 (기본값: 3)
 
 ### 출력 (Response Body)
 ```json
 {
-  "answer": "1945년",
+  "answer": "1945년 10월 24일 국제 연합(UN)이 설립되었습니다.",
   "source_documents": [
     {
       "title": "유엔",
-      "retrieved_question": "유엔은 언제 설립되었는가?",  
+      "retrieved_question": "유엔은 언제 설립되었는가?",
       "content_snippet": "유엔(UN)은 국제 연합(United Nations)의 약자로, 1945년 10월 24일에 설립된...",
-      "is_fewshot": false 
+      "is_fewshot": false
     }
-  ],
-  "few_shot_examples_used": 3
+  ]
 }
 ```
 
@@ -121,4 +123,14 @@ chmod +x run.sh
 
 # 가상 환경 설정, 라이브러리 설치, 데이터베이스 구축, 서버 실행까지 모든 과정을 한 번에 처리
 ./run.sh
+```
+
+### 서버 실행 테스트
+```bash
+curl -X POST "http://127.0.0.1:8000/api/v1/rag/invoke" \
+-H "Content-Type: application/json" \
+-d '{
+  "question": "이순신 장군이 사망한 전쟁은 무엇인가?",
+  "k": 3
+}'
 ```

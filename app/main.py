@@ -37,7 +37,7 @@ def on_startup():
     is_ready = True  # 모든 초기화가 끝나면 플래그를 True로 설정
     print("--- 모든 모델 및 시스템 초기화 완료. 서비스 준비 완료. ---")
 
-app.include_router(api_router, prefix="/api/v1/rag", tags=["RAG"])
+app.include_router(api_router, prefix="/rag", tags=["RAG"])
 
 @app.get("/health", tags=["Status"])
 def health_check():
