@@ -8,6 +8,11 @@ datasets
 transformers
 accelerate
 bitsandbytes==0.41.2.post2
+sentence-transformers
+
+# LangChain
+langchain-community
+chromadb
 
 # LangChain
 langchain-community
