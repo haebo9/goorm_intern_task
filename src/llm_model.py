@@ -45,7 +45,7 @@ def load_quantized_model(model_id: str) -> HuggingFacePipeline:
     return llm
 
 if __name__ == '__main__':
-    # 모델 이름 오타 수정: kanana -> Kanak
+    # 사용할 모델 ID (카카오의 Kanana 모델)
     MODEL_ID = "kakaocorp/kanana-1.5-8b-instruct-2505"
 
     print(f"'{MODEL_ID}' 모델을 4비트 양자화하여 불러오는 중...")

@@ -6,9 +6,10 @@ torchaudio==2.1.0
 # Hugging Face Libraries
 datasets
 transformers==4.35.2
-accelerate
+accelerate==0.25.0
 bitsandbytes==0.41.2.post2
 sentence-transformers
+safetensors==0.4.0
 
 # LangChain
 langchain-community
