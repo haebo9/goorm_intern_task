@@ -1,19 +1,19 @@
-# PyTorch 2.1.0 for CUDA 11.8
-torch==2.1.0
-torchvision==0.16.0
-torchaudio==2.1.0
+# 기본 라이브러리
+fastapi
+uvicorn
+pydantic
+pydantic-settings
 
-# Hugging Face Libraries
+# LLM & RAG 관련 라이b브러리
+torch
+transformers
+accelerate
+bitsandbytes
+langchain
+langchain_community
+
+# 데이터 처리 및 벡터 DB
 datasets
-transformers==4.35.2
-accelerate==0.25.0
-bitsandbytes==0.41.2.post2
 sentence-transformers
-safetensors==0.4.0
-
-# LangChain
-langchain-community
 chromadb
-
-# Downgrade NumPy for compatibility
-numpy<2.0
+pandas

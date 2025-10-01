@@ -21,7 +21,7 @@ def load_quantized_model(model_id: str) -> HuggingFacePipeline:
     )
 
     # 토크나이저 불러오기
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
 
     # 양자화 설정을 적용하여 모델 불러오기
     model = AutoModelForCausalLM.from_pretrained(

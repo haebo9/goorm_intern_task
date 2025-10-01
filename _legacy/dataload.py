@@ -33,7 +33,8 @@ def create_vector_db(documents):
     """문서들을 임베딩하여 ChromaDB에 저장합니다."""
     print("임베딩 모델을 불러오는 중...")
     # HuggingFace 임베딩 모델 초기화
-    model_kwargs = {'device': 'cuda'} # CUDA 사용 설정
+    # CUDA가 아닌 CPU를 사용하도록 model_kwargs 수정
+    model_kwargs = {'device': 'cpu'} 
     encode_kwargs = {'normalize_embeddings': True}
     embeddings = HuggingFaceEmbeddings(
         model_name=EMBED_MODEL_ID,
@@ -48,7 +49,6 @@ def create_vector_db(documents):
 
     print("ChromaDB에 벡터를 저장하는 중...")
     # 분할된 텍스트를 기반으로 ChromaDB 벡터 스토어 생성 및 저장
-    # persist_directory를 설정하여 디스크에 저장
     vectordb = Chroma.from_documents(
         documents=splits,
         embedding=embeddings,
