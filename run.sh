@@ -19,16 +19,16 @@ echo "가상 환경을 활성화합니다."
 source .venv/bin/activate
 
 # 3. 필수 라이브러리 설치
-echo -e "\n--- 2. 필수 라이브러리 설치 ---"
+echo -e "\n--- 3. 필수 라이브러리 설치 ---"
 echo "requirements.txt를 사용하여 라이브러리를 설치합니다..."
 pip install -r requirements.txt
 
 # 4. 벡터 데이터베이스 확인 및 생성
-echo -e "\n--- 3. 벡터 데이터베이스 확인 및 생성 ---"
+echo -e "\n--- 4. 벡터 데이터베이스 확인 및 생성 ---"
 if [ ! -d "data/chroma_db_korquad_full_context_rag" ]; then
     echo "벡터 DB가 존재하지 않습니다. 'db_setup.py'를 실행하여 새로 구축합니다."
     echo "이 작업은 데이터셋 크기에 따라 몇 분 정도 소요될 수 있습니다..."
-    python3 db_setup.py
+    python db_setup.py
 else
     echo "벡터 DB가 이미 존재하므로 구축 단계를 건너뜁니다."
 fi
@@ -36,7 +36,7 @@ fi
 # 5. FastAPI 서버 실행 및 확인
 echo -e "\n--- 5. FastAPI 서버 시작 및 모델 로드 확인 ---"
 echo "Uvicorn 서버를 백그라운드에서 시작합니다. 주소: http://127.0.0.1:8000"
-uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload &
 UVICORN_PID=$!
 
 # 서버가 시작될 때까지 잠시 대기 (최대 60초)
