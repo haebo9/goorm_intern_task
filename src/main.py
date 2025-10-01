@@ -4,8 +4,12 @@ import torch
 from langchain.prompts import PromptTemplate
 from langchain.schema.runnable import RunnablePassthrough
 from langchain.schema.output_parser import StrOutputParser
-from src.dataload import load_and_process_data, create_vector_db, CHROMA_DB_PATH, EMBED_MODEL_ID
-from src.llm_model import load_quantized_model
+
+# 현재 파일이 src 디렉토리에 있으므로, 상위 디렉토리(프로젝트 루트)를 경로에 추가
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from dataload import load_and_process_data, create_vector_db, CHROMA_DB_PATH, EMBED_MODEL_ID
+from llm_model import load_quantized_model
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
