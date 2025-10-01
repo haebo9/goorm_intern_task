@@ -74,25 +74,25 @@ def initialize_rag_system():
 
 # --- Few-Shot RAG 서비스 로직 ---
 
-def _extract_answer_snippet(context: str, answer: str) -> str:
-    """정답 텍스트 시작 위치부터 첫 마침표까지의 스니펫을 추출합니다."""
-    if not answer or answer not in context:
+def _extract_answer_snippet(context: str, answer_start: int) -> str:
+    """정답 시작 위치(answer_start)부터 첫 마침표까지의 스니펫을 추출합니다."""
+    if answer_start == -1 or answer_start >= len(context):
         return context[:200] + "..."
 
     try:
-        start_index = context.find(answer)
-        if start_index == -1:
-            return context[:200] + "..."
-
-        end_index = context.find('.', start_index)
+        # answer_start에서 시작하여 첫 번째 마침표 위치를 찾음
+        end_index = context.find('.', answer_start)
         
         if end_index != -1:
-            snippet = context[start_index : end_index + 1]
+            # 마침표를 포함하여 스니펫을 자름
+            snippet = context[answer_start : end_index + 1]
         else:
-            snippet = context[start_index : start_index + 200] + "..."
+            # 마침표를 찾지 못한 경우, 해당 위치부터 200자를 잘라냄
+            snippet = context[answer_start : answer_start + 200] + "..."
         
         return snippet.strip()
     except Exception:
+        # 예외 발생 시 안전하게 앞부분을 반환
         return context[:200] + "... (스니펫 추출 오류)"
 
 def few_shot_rag_invoke(question: str, k_fewshot: int):
@@ -160,7 +160,9 @@ def few_shot_rag_invoke(question: str, k_fewshot: int):
     
     response_text = tokenizer.decode(outputs[0][len(inputs["input_ids"][0]):], skip_special_tokens=True)
     
-    snippet = _extract_answer_snippet(context_doc.page_content, response_text)
+    answer_start_index = context_doc.metadata.get('answer_start', -1)
+    snippet = _extract_answer_snippet(context_doc.page_content, answer_start_index)
+    
     source_documents = [SourceDocument(
         title=context_doc.metadata.get('title', 'N/A'),
         retrieved_question=context_doc.metadata.get('question', 'N/A'),
