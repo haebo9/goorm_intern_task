@@ -5,7 +5,7 @@ torchaudio==2.1.0
 
 # Hugging Face Libraries
 datasets
-transformers
+transformers==4.35.2
 accelerate
 bitsandbytes==0.41.2.post2
 sentence-transformers
@@ -14,5 +14,5 @@ sentence-transformers
 langchain-community
 chromadb
 
-# LangChain
-langchain-community
+# Downgrade NumPy for compatibility
+numpy<2.0
