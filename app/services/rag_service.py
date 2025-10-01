@@ -74,9 +74,26 @@ def initialize_rag_system():
 
 # --- Few-Shot RAG 서비스 로직 ---
 
-def _format_docs(docs):
-    """검색된 문서를 프롬프트에 맞게 포맷팅합니다."""
-    return "\n\n".join(doc.page_content for doc in docs)
+def _extract_answer_snippet(context: str, answer: str) -> str:
+    """정답 텍스트 시작 위치부터 첫 마침표까지의 스니펫을 추출합니다."""
+    if not answer or answer not in context:
+        return context[:200] + "..."
+
+    try:
+        start_index = context.find(answer)
+        if start_index == -1:
+            return context[:200] + "..."
+
+        end_index = context.find('.', start_index)
+        
+        if end_index != -1:
+            snippet = context[start_index : end_index + 1]
+        else:
+            snippet = context[start_index : start_index + 200] + "..."
+        
+        return snippet.strip()
+    except Exception:
+        return context[:200] + "... (스니펫 추출 오류)"
 
 def few_shot_rag_invoke(question: str, k_fewshot: int):
     """
@@ -87,14 +104,17 @@ def few_shot_rag_invoke(question: str, k_fewshot: int):
 
     retrieved_docs = retriever.invoke(question)
     
-    if len(retrieved_docs) > 1 and k_fewshot > 0:
-        context_doc = retrieved_docs[0]
-        few_shot_examples_docs = retrieved_docs[1:k_fewshot + 1]
-        num_examples_used = len(few_shot_examples_docs)
-    else:
-        context_doc = retrieved_docs[0] if retrieved_docs else None
-        few_shot_examples_docs = []
-        num_examples_used = 0
+    context_doc = None
+    few_shot_examples_docs = []
+    num_examples_used = 0
+
+    if retrieved_docs:
+        if len(retrieved_docs) > 1 and k_fewshot > 0:
+            context_doc = retrieved_docs[0]
+            few_shot_examples_docs = retrieved_docs[1:k_fewshot + 1]
+            num_examples_used = len(few_shot_examples_docs)
+        else:
+            context_doc = retrieved_docs[0]
 
     few_shot_examples_text = "".join([
         f"[예시 질문]: {doc.metadata['question']}\n[예시 출처]: {doc.page_content}\n[예시 답변]: {doc.metadata['answer']}\n"
@@ -131,39 +151,27 @@ def few_shot_rag_invoke(question: str, k_fewshot: int):
     with torch.no_grad():
         outputs = model.generate(
             **inputs,
-            max_new_tokens=512,
-            do_sample=False,
+            max_new_tokens=settings.MAX_NEW_TOKENS,
             eos_token_id=tokenizer.eos_token_id,
-            repetition_penalty=1.1
+            do_sample=True,
+            temperature=0.6,
+            top_p=0.9,
         )
-
-    decoded_answer = tokenizer.decode(outputs[0][inputs["input_ids"].shape[-1]:], skip_special_tokens=True).strip()
     
-    # 답변 후처리
-    clean_answer = decoded_answer
-    stop_tokens = ["assistant", "[최종 답변]:", "user:", "##"]
-    for token in stop_tokens:
-        if token in clean_answer:
-            clean_answer = clean_answer.split(token)[0].strip()
-
+    response_text = tokenizer.decode(outputs[0][len(inputs["input_ids"][0]):], skip_special_tokens=True)
+    
     source_documents = []
     if context_doc:
+        snippet = _extract_answer_snippet(context_doc.page_content, response_text)
         source_documents.append(SourceDocument(
             title=context_doc.metadata.get('title', 'N/A'),
             retrieved_question=context_doc.metadata.get('question', 'N/A'),
-            content_snippet=context_doc.page_content,
+            content_snippet=snippet,
             is_fewshot=False
-        ))
-    for doc in few_shot_examples_docs:
-        source_documents.append(SourceDocument(
-            title=doc.metadata.get('title', 'N/A'),
-            retrieved_question=doc.metadata.get('question', 'N/A'),
-            content_snippet=doc.page_content,
-            is_fewshot=True
         ))
 
     return {
-        "answer": clean_answer,
+        "answer": response_text,
         "source_documents": source_documents,
         "few_shot_examples_used": num_examples_used
     }

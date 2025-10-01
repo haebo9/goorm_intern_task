@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     EMBED_MODEL_ID: str = "dragonkue/bge-m3-ko"
 
     # 벡터 DB 경로
-    CHROMA_DB_PATH: str = "chroma_db_korquad_full_context_rag"
+    CHROMA_DB_PATH: str = "data/chroma_db_korquad_full_context_rag"
 
     # Few-Shot RAG에서 사용할 예시의 수
     DEFAULT_K_FEWSHOT: int = 3

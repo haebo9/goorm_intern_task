@@ -126,7 +126,7 @@ chmod +x run.sh
 ./run.sh
 ```
 
-### 서버 실행 테스트
+### +서버 실행 테스트
 ```bash
 curl -X POST "http://127.0.0.1:8000/rag/answer" \
 -H "Content-Type: application/json" \

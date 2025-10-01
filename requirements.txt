@@ -1,19 +1,24 @@
 # 기본 라이브러리
-fastapi
-uvicorn
-pydantic
-pydantic-settings
+fastapi==0.110.0
+uvicorn==0.29.0
+pydantic==2.7.1
+pydantic-settings==2.2.1
+python-dotenv==1.0.1
 
-# LLM & RAG 관련 라이b브러리
-torch
-transformers
-accelerate
-bitsandbytes
-langchain
-langchain_community
+# LLM & RAG 관련 라이브러리
+torch==2.2.2
+transformers==4.39.3
+accelerate==0.29.3
+bitsandbytes==0.43.0
+langchain==0.1.14
+langchain-community==0.0.32
+langchain-core==0.1.33
+langchain-text-splitters==0.0.1
 
 # 데이터 처리 및 벡터 DB
-datasets
-sentence-transformers
-chromadb
-pandas
+datasets==2.18.0
+sentence-transformers==2.6.1
+chromadb==0.4.24
+pandas==2.2.2
+tqdm==4.66.2
+
